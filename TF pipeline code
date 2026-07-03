@@ -1,1 +1,37 @@
+pipeline {
+    agent any
+    stages {
+        stage ('PULL'){
+            steps {
+                git branch: 'main', url: 'https://github.com/rohitpawarofficial11-cell/My-eks-infra.git'
+        }
+        } 
+        
+        stage ('Terraform installation'){
+            steps {
+                sh '''wget -O - https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+                    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(grep -oP \'(?<=UBUNTU_CODENAME=).*\' /etc/os-release || lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+                    sudo apt update && sudo apt install terraform'''
+            }
+        }
 
+        stage ('infrastructure validation'){
+            steps {
+                sh '''terraform init
+                    terraform plan'''
+            }
+        }
+
+        stage ('approval'){
+            steps {
+                input message: 'Do you want to apply the changes?', ok: 'Apply'
+            }
+        }
+
+        stage ('infrastructure deployment'){
+            steps {
+                sh '''terraform apply -auto-approve'''
+            }
+        }
+    }
+}
